@@ -11,6 +11,9 @@ import FAQ from './pages/FAQ';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Profile from './pages/Profile';
+import Alert from './pages/Alert';
+import ViewAlert from './pages/ViewAlert';
+import AddAlert from './pages/AddAlert';
 
 export const userdatactx = createContext();
 export const usertokenctx = createContext();
@@ -59,7 +62,11 @@ function App() {
               <Routes>
                  {!userToken ? <><Route path="/" element={<Home/>} /> <Route path="/login" element={<Login/>} />
                   <Route path="/register" element={<Register/>} /> </>: <><Route path="/" element={<Profile/>} />  <Route path="/dashboard" element={<Profile/>} />
-                  <Route path="/profile" element={<Profile/>} /></>}
+                  <Route path="/profile" element={<Profile/>} />
+                  <Route path="/alerts" element={<Alert/>} />
+                  <Route path="/alerts/:id" element={<ViewAlert/>} />
+                  <Route path="/alerts/add" element={<AddAlert/>} />       
+                  </>}
                   
                   <Route path="/contact" element={<Contact/>} />
                   <Route path="/faqs" element={<FAQ/>} />

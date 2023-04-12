@@ -87,3 +87,18 @@ p.footer-bottom {
   text-align: center;
   color: #fff;
 }
+
+.distance-box {
+  background: #f5f5f5;
+  padding: 10px;
+}
+
+.weather-report {
+  background: #fbebbd;
+  padding: 10px;
+}
+a.alert-link {
+  padding:10px 15px;
+  background: #4178cf;
+  color: #fff;
+}
