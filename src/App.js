@@ -10,10 +10,10 @@ import Contact from './pages/Contact';
 import FAQ from './pages/FAQ';
 import Login from './pages/Login';
 import Register from './pages/Register';
-import Profile from './pages/Profile';
 import Alert from './pages/Alert';
 import ViewAlert from './pages/ViewAlert';
 import AddAlert from './pages/AddAlert';
+import Profile from './pages/Profile';
 
 export const userdatactx = createContext();
 export const usertokenctx = createContext();
@@ -60,17 +60,17 @@ function App() {
             <userlogoutctx.Provider value={userLogout} >
               <Header/>
               <Routes>
-                 {!userToken ? <><Route path="/" element={<Home/>} /> <Route path="/login" element={<Login/>} />
-                  <Route path="/register" element={<Register/>} /> </>: <><Route path="/" element={<Profile/>} />  <Route path="/dashboard" element={<Profile/>} />
+                 {!userToken ? <Route path="/" element={<Home/>} /> : <><Route path="/" element={<Profile/>} />  <Route path="/alerts" element={<Alert/>} />
+                  <Route path="/alerts/:id" element={<ViewAlert/>} /></>}
+                  <Route path="/login" element={<Login/>} />
+                  <Route path="/register" element={<Register/>} />
+                  <Route path="/dashboard" element={<Profile/>} />
                   <Route path="/profile" element={<Profile/>} />
-                  <Route path="/alerts" element={<Alert/>} />
-                  <Route path="/alerts/:id" element={<ViewAlert/>} />
-                  <Route path="/alerts/add" element={<AddAlert/>} />       
-                  </>}
-                  
                   <Route path="/contact" element={<Contact/>} />
+                
                   <Route path="/faqs" element={<FAQ/>} />
                   <Route path="/:slug" element={<GetPage/>} />
+                  <Route path="*" element={<h1>Not Found</h1>} />
               </Routes>
             </userlogoutctx.Provider>
           </userloginctx.Provider>

@@ -1,0 +1,305 @@
+import { userdatactx, userloginctx, userlogoutctx, usertokenctx } from "../App";
+import {MDBBtn,MDBContainer,MDBCard,MDBCardBody,MDBCardImage,MDBRow,MDBCol,MDBIcon,MDBInput} from 'mdb-react-ui-kit';
+import {Box,Button,ButtonGroup,Flex,HStack,IconButton,Input,SkeletonText,Text,} from '@chakra-ui/react'
+import { FaLocationArrow, FaTimes } from 'react-icons/fa'
+import { useContext } from "react";
+import { Button as BButton } from "react-bootstrap";
+import { Link } from "react-router-dom";
+import Footer from "../components/Footer";
+
+import {useJsApiLoader,GoogleMap,Marker,Autocomplete,DirectionsRenderer,DrawingManager,LoadScript,Polyline,} from '@react-google-maps/api'
+import { useRef, useState } from 'react'
+
+const center = { lat: 41.72324931731098, lng: -73.93445541543795 }
+  
+  export default function ProfileNew()
+{
+    const userInfoData = useContext(userdatactx);
+    const userTokenData = useContext(usertokenctx);
+    const userLogoutCtx = useContext(userlogoutctx)
+
+    const LoggedinUser = JSON.parse(userInfoData);
+    function userLogout()
+    {
+        
+      fetch('https://api.maristproject.online/api/logout', {method: 'POST',
+      headers: {
+        Accept: 'application.json',
+        'Content-Type': 'application/json',
+        'Authorization' : 'Bearer ' + userTokenData,
+      },
+      }).then((res) => res.json())
+      .then((json) => {
+                        if(json.status == "success")
+                        {userLogoutCtx()}
+                      }
+                      )
+                      {userLogoutCtx()}
+    }
+
+    const { isLoaded } = useJsApiLoader({
+      googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY,
+      libraries: ['places',"drawing"],
+    })
+  
+    const [map, setMap] = useState(/** @type google.maps.Map */ (null))
+    const [directionsResponse, setDirectionsResponse] = useState(null)
+    const [distance, setDistance] = useState('')
+    const [duration, setDuration] = useState('')
+    const [originTemp, setOriginTemp] = useState('')
+    const [destTemp, setDestTemp] = useState('')
+    const [trafficstatus, settrafficstatus] = useState('')
+    
+    /** @type React.MutableRefObject<HTMLInputElement> */
+    const originRef = useRef()
+    /** @type React.MutableRefObject<HTMLInputElement> */
+    const destiantionRef = useRef()
+
+    const weatherOrigin = useRef();
+    const weatherDestination = useRef();
+  
+    if (!isLoaded) {
+      return <SkeletonText />
+    }
+  
+    async function calculateRoute() {
+      if (originRef.current.value === '' || destiantionRef.current.value === '') {
+        return
+      }
+      // eslint-disable-next-line no-undef
+      const directionsService = new google.maps.DirectionsService()
+      const results = await directionsService.route({
+        origin: originRef.current.value,
+        destination: destiantionRef.current.value,
+        // eslint-disable-next-line no-undef
+        travelMode: google.maps.TravelMode.DRIVING,
+      })
+      console.log("origin  :  "+ originRef.current.value);
+      console.log("destination  :  "+ destiantionRef.current.value);
+      
+      setDistance(results.routes[0].legs[0].distance.text)
+      setDuration(results.routes[0].legs[0].duration.text)
+      var origin_lat = results.routes[0].legs[0].start_location.lat();
+      var origin_lng = results.routes[0].legs[0].start_location.lng();
+      var dest_lat = results.routes[0].legs[0].end_location.lat();
+      var dest_lng = results.routes[0].legs[0].end_location.lng();
+
+      var distance_ =  results.routes[0].legs[0].distance.value;
+      var time_ = results.routes[0].legs[0].duration.value;
+      console.log("distance " + distance_);
+      console.log("time " + time_);
+      var traffic_time = distance_ / time_;
+      if(traffic_time < 10000 && traffic_time > 8)
+      {
+          console.log("traffic status is low")
+          settrafficstatus("low");
+      }
+
+      if(traffic_time < 8 && traffic_time > 5)
+      {
+          console.log("traffic status is medium")
+          settrafficstatus("medium");
+      }
+
+      if(traffic_time < 5 && traffic_time > 1)
+      {
+          console.log("traffic status is high")
+          settrafficstatus("high");
+      }
+
+
+      console.log("origin lat : " + origin_lat);
+      console.log("origin lng : " + origin_lng);
+      console.log("dest lat : " + dest_lat);
+      console.log("dest lng : " + dest_lng);
+      fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${origin_lat}&lon=${origin_lng}&appid=d885aa1d783fd13a55050afeef620fcb`).then(
+      response=> response.json()).then(
+        data => {
+          const kelvin = data.main.temp;
+          const celcius = kelvin - 273.15;
+          setOriginTemp(Math.round(celcius)+"°C");
+        }
+      ).catch(error => console.log(error))
+
+      fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${dest_lat}&lon=${dest_lng}&appid=d885aa1d783fd13a55050afeef620fcb`).then(
+        response=> response.json()).then(
+          data => {
+            const kelvin = data.main.temp;
+            const celcius = kelvin - 273.15;
+            setDestTemp(Math.round(celcius)+"°C");
+          }
+        ).catch(error => console.log(error))
+
+       
+        var currentTime = new Date();
+        var currentOffset = currentTime.getTimezoneOffset();
+        var ISTOffset = 330; 
+        var ISTTime = new Date(currentTime.getTime() + ISTOffset*60000);
+        var date_time = ISTTime.toISOString();
+        console.log("date  :   "+ date_time);
+        var request_data = {
+          "origin":{
+            "location":{
+              "latLng":{
+                "latitude": origin_lat,
+                "longitude": origin_lng
+              }
+            }
+          },
+          "destination":{
+            "location":{
+              "latLng":{
+                "latitude": dest_lat,
+                "longitude": dest_lng
+              }
+            }
+          },
+          "travelMode": "DRIVE",
+          "routingPreference": "TRAFFIC_AWARE_OPTIMAL",
+          "extraComputations": ["TRAFFIC_ON_POLYLINE"],
+          "departureTime": date_time,
+          "computeAlternativeRoutes": false,
+          "routeModifiers": {
+            "avoidTolls": false,
+            "avoidHighways": false,
+            "avoidFerries": false
+          },
+          "languageCode": "en-US",
+          "units": "IMPERIAL"
+        }; 
+        //https://routes.googleapis.com/directions/v2:computeRoutes
+         fetch(`https://routes.googleapis.com/directions/v2:computeRoutes`,{
+          method: "POST",
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Goog-Api-Key' : "AIzaSyCJ-U-AruCKD2yyfEam5wMcWAMCIVT6BS8",
+            'X-Goog-FieldMask': '*'
+          },
+          body: JSON.stringify(request_data)
+         } ).then(
+        response=> response.json()).then(
+          data => {
+            setDirectionsResponse(data.routes[0].polyline.encodedPolyline)
+            console.log("poly line : " + data.routes[0].polyline.encodedPolyline)
+          }
+        ).catch(error => console.log(error))
+        
+
+    }
+  
+    function clearRoute() {
+      setDirectionsResponse(null)
+      setDistance('')
+      setDuration('')
+      originRef.current.value = ''
+      destiantionRef.current.value = ''
+    }
+
+
+
+  
+    return (
+
+        <Flex
+        position='relative'
+        flexDirection='column'
+        alignItems='center'
+        h='calc(100vh - 100px)'
+        w='100%'
+      >
+        <Box position='absolute' left={0} top={0} h='100%' w='100%'>
+          {/* Google Map Box */}
+         
+            <GoogleMap
+              center={center}
+              zoom={15}
+              mapContainerStyle={{ width: '100%', height: '100%' }}
+              options={{
+                zoomControl: false,
+                streetViewControl: false,
+                mapTypeControl: false,
+                fullscreenControl: false,
+              }}
+             
+            >
+              <Marker position={center} />
+              {directionsResponse && (
+                //<DrawingManager onLoad={map => setMap(map)} drawingMode={directionsResponse}/>
+                <Polyline onLoad={map => setMap(map)} drawingMode={directionsResponse}/>
+              )}
+            </GoogleMap>
+     
+        </Box>
+        <Box
+          p={4}
+          borderRadius='lg'
+          m={4}
+          bgColor='white'
+          shadow='base'
+          minW='container.md'
+          zIndex='1'
+        >
+          <HStack spacing={2} justifyContent='space-between'>
+            <Box flexGrow={1}>
+              <Autocomplete>
+                <Input type='text' placeholder='Origin' ref={originRef} />
+              </Autocomplete>
+            </Box>
+            <Box flexGrow={1}>
+              <Autocomplete>
+                <Input
+                  type='text'
+                  placeholder='Destination'
+                  ref={destiantionRef}
+                />
+              </Autocomplete>
+            </Box>
+  
+            <ButtonGroup>
+              <Button className="btn btn-primary p-1" colorScheme='pink' type='submit' onClick={calculateRoute}>
+                Calculate Route
+              </Button>
+              <IconButton
+                aria-label='center back'
+                className="btn btn-primary p-1"
+                icon={<FaTimes />}
+                onClick={clearRoute}
+              />
+            </ButtonGroup>
+          </HStack>
+          <HStack spacing={4} mt={4} justifyContent='space-between'>
+            <Text>Distance: {distance} </Text>
+            <Text>Duration: {duration} </Text>
+            <IconButton
+              aria-label='center back'
+              icon={<FaLocationArrow />}
+              className="btn btn-primary p-1"
+              isRound
+              onClick={() => {
+                map.panTo(center)
+                map.setZoom(15)
+              }}
+            />
+          </HStack>
+
+          <HStack spacing={4} mt={4} justifyContent='space-between'>
+            <Text>Origin Temp: {originTemp} </Text>
+            <Text>Destination Temp: {destTemp} </Text>
+            <IconButton
+              aria-label='center back'
+              icon={<FaLocationArrow />}
+              className="btn btn-primary p-1"
+              isRound
+              onClick={() => {
+                map.panTo(center)
+                map.setZoom(15)
+              }}
+            />
+          </HStack>
+          <p>Traffic is {trafficstatus}</p>
+
+        </Box>
+      </Flex>          
+
+    )
+}

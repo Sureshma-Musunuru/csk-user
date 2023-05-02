@@ -7,7 +7,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { MDBBtn, MDBInput } from "mdb-react-ui-kit";
 
 
-export default function Alert()
+export default function ViewAlert()
 {
     const [Alert, setAlert] = useState(null);
     const {id} = useParams();

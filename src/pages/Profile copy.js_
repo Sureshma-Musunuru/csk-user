@@ -34,7 +34,6 @@ import {
   Marker,
   Autocomplete,
   DirectionsRenderer,
-  PolylineF,
 } from '@react-google-maps/api'
 import { useRef, useState } from 'react'
 import { getFirebaseToken } from "../firebase";
@@ -103,9 +102,6 @@ const center = { lat: 41.72324931731098, lng: -73.93445541543795 }
     const [originTemp, setOriginTemp] = useState('')
     const [destTemp, setDestTemp] = useState('')
     const [trafficstatus, settrafficstatus] = useState('')
-    const [speedsets, setspeedsets] = useState([]);
-    const [decodedpolyline, setdecodedpolyline] = useState([]);
-
     var origin_temp;
     var destination_temp;
     /** @type React.MutableRefObject<HTMLInputElement> */
@@ -133,10 +129,10 @@ const center = { lat: 41.72324931731098, lng: -73.93445541543795 }
       })
       console.log("origin  :  "+ originRef.current.value);
       console.log("destination  :  "+ destiantionRef.current.value);
-      
+      setDirectionsResponse(results)
       setDistance(results.routes[0].legs[0].distance.text)
       setDuration(results.routes[0].legs[0].duration.text)
-     var origin_lat = results.routes[0].legs[0].start_location.lat();
+      var origin_lat = results.routes[0].legs[0].start_location.lat();
       var origin_lng = results.routes[0].legs[0].start_location.lng();
       var dest_lat = results.routes[0].legs[0].end_location.lat();
       var dest_lng = results.routes[0].legs[0].end_location.lng();
@@ -190,68 +186,6 @@ const center = { lat: 41.72324931731098, lng: -73.93445541543795 }
           }
         ).catch(error => console.log(error))
       setAlertSet("yes");
-
-       
-        var currentTime = new Date();
-        var currentOffset = currentTime.getTimezoneOffset();
-        var ISTOffset = 330; 
-        var ISTTime = new Date(currentTime.getTime() + ISTOffset*60000);
-        var date_time = ISTTime.toISOString();
-        console.log("date  :   "+ date_time);
-        var request_data = {
-          "origin":{
-            "location":{
-              "latLng":{
-                "latitude": origin_lat,
-                "longitude": origin_lng
-              }
-            }
-          },
-          "destination":{
-            "location":{
-              "latLng":{
-                "latitude": dest_lat,
-                "longitude": dest_lng
-              }
-            }
-          },
-          "travelMode": "DRIVE",
-          "routingPreference": "TRAFFIC_AWARE_OPTIMAL",
-          "extraComputations": ["TRAFFIC_ON_POLYLINE"],
-         
-          "computeAlternativeRoutes": false,
-          "routeModifiers": {
-            "avoidTolls": false,
-            "avoidHighways": false,
-            "avoidFerries": false
-          },
-          "languageCode": "en-US",
-          "units": "IMPERIAL"
-        }; 
-        //https://routes.googleapis.com/directions/v2:computeRoutes
-         fetch(`https://routes.googleapis.com/directions/v2:computeRoutes`,{
-          method: "POST",
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Goog-Api-Key' : "AIzaSyCJ-U-AruCKD2yyfEam5wMcWAMCIVT6BS8",
-            'X-Goog-FieldMask': '*'
-          },
-          body: JSON.stringify(request_data)
-         } ).then(
-        response=> response.json()).then(
-          data => {
-            setDirectionsResponse(results)
-            console.log("poly line : " + data.routes[0].polyline.encodedPolyline)
-            var decodePolyline = require('decode-google-map-polyline');
-  var polyline = data.routes[0].polyline.encodedPolyline;
-  console.log(decodePolyline(polyline));
-setdecodedpolyline(decodePolyline(polyline));
-  setspeedsets(data.routes[0].travelAdvisory.speedReadingIntervals);
-
-          }
-        ).catch(error => console.log(error))
-        
-
     }
   
     function clearRoute() {
@@ -419,91 +353,9 @@ setdecodedpolyline(decodePolyline(polyline));
             onLoad={map => setMap(map)}
           >
             <Marker position={center} />
-            {
-                directionsResponse && <>
+            {directionsResponse && (
               <DirectionsRenderer directions={directionsResponse} />
-              <PolylineF  onLoad={console.log("polyline 1 ")} path={decodedpolyline}
-                        options={{strokeColor: '#3492eb',
-                        strokeOpacity: 0.8,
-                        strokeWeight: 10,
-                        fillColor: '#3492eb',
-                        fillOpacity: 0.35,
-                        clickable: false,
-                        draggable: false,
-                        editable: false,
-                        visible: true,
-                        radius: 30000,
-                        paths: decodedpolyline,
-                        zIndex: 10000}}  />
-                {
-                    speedsets.map( (speedinfo) => { if(speedinfo.speed == "SLOW")
-                    {
-        console.log("speedinfo.speed 1");
-
-                        var start_loc = speedinfo.startPolylinePointIndex;
-                        var end_loc = speedinfo.endPolylinePointIndex;
-                        var path = [];
-                        for(var i = start_loc; i <= end_loc; i++)
-                        {
-                            path.push(decodedpolyline[i]);
-                        }
-                        console.log("Slower paths : ");
-                        console.log(path);
-                        var options = {
-                            strokeColor: '#f7c736',
-                            strokeOpacity: 0.8,
-                            strokeWeight: 10,
-                            fillColor: '#f7c736',
-                            fillOpacity: 0.35,
-                            clickable: false,
-                            draggable: false,
-                            editable: false,
-                            visible: true,
-                            radius: 30000,
-                            paths: path,
-                            zIndex: 20000
-                        };
-                        return <PolylineF  onLoad={console.log("jjj")} path={path}
-                        options={options}  />
-                    }
-            })
-
-                }
-
-{
-        speedsets.map( (speedinfo) => {  if(speedinfo.speed == "TRAFFIC_JAM")
-        {
-            var start_loc = speedinfo.startPolylinePointIndex;
-            var end_loc = speedinfo.endPolylinePointIndex;
-            var path = [];
-            for(var i = start_loc; i <= end_loc; i++)
-            {
-                path.push(decodedpolyline[i]);
-            }
-            console.log("Trafffic Jams paths : ");
-            console.log(path);
-            var options = options = {
-                strokeColor: '#a23633',
-                strokeOpacity: 0.8,
-                strokeWeight: 10,
-                fillColor: '#a23633',
-                fillOpacity: 0.35,
-                clickable: false,
-                draggable: false,
-                editable: false,
-                visible: true,
-                radius: 30000,
-                paths: path,
-                zIndex: 20000
-              };
-            return <PolylineF  path={path}
-            options={options}  />
-        }
-    })
-    }
-
-                </>
-              }
+            )}
           </GoogleMap>
         </Box>
        
